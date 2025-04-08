@@ -233,8 +233,8 @@ fun insert( xs : list<(int,a)>, idx : int, value : a, n : int  = 0 ) : list<(int
       Cons(x,xx) | x.fst < idx -> Cons(x, insert(xx, idx, value, n + 1))
       _ -> Cons((idx,value),xs)
 
-pub inline extern debug-evv(): e ()
-  js inline "console.log('debug ', $std_core_hnd._evv_get());"
+pub inline extern debug-evv(?kk-file-line: string): e ()
+  js inline "console.log(#1, $std_core_hnd._evv_get());"
 
 // Interleave a list actions around their asynchronous operations and explicitly returning either
 // either their result or their exception.
@@ -276,7 +276,7 @@ pub fun error/is-cancel( t : error<a> ) : bool
     Error(exn) -> exn.is-cancel
     _ -> False
 
-fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strands<a>|e> ()
+fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,strands<a>|e> ()
   val strands =  xs.map-indexed fn(i,action)
       return fn()
         trace("Strand ")
@@ -286,7 +286,7 @@ fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strand
         if res.is-finalize then cancel()  // cancel others if finalization happens
   val ch : some<a,e> channel<() -> <async|e> a> = channel()
   fun handle-strand(action) 
-    with override     
+  with override     
       // redirect all other operations
       fun no-await(setup,scope,c,f)  
         no-await(setup,scope,c,f)    
@@ -302,8 +302,6 @@ fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strand
           // emit a resumption of this strand into the channel
           ch.emit-io( /* no-cps */ { rcontext.resume(res) }  )
         ()  // stop the strand at this point 
-      // fun async-ticks()  
-      //   async-ticks()
     action()
   trace("Interleaved")
   debug-evv()
@@ -355,9 +353,6 @@ pub effect async
   ctl no-await( setup : await-setup<a>, scope : scope, cancelable : bool, f : error<a> -> io-noexn ()  ) : ()
   ctl async-iox( action : () -> io-noexn a ) : a
   ctl cancel( scope : scope ) : ()
-
-  // like std/time/timer/ticks, but may return synthetic times when executing with a test scheduler
-  // fun async-ticks(): duration
 
 // The `cancel` operations cancels any outstanding asynchronous operation under the innermost
 // `cancelable` handler by returning the `Cancel` exception. The `cancel` operation itself returns normally
@@ -413,7 +408,6 @@ pub fun async/synthetic-time(action : () -> <async,io-noexn|e> b): <async,io-noe
     fun no-await( setup, scope, c, f ) no-await(setup, scope, c, f)
     fun cancel( scope ) cancel(scope)
     fun async-iox( f ) async-iox(f)
-    // fun async-ticks() test-scheduler.ticks()
 
 // The outer `:async` effect handler. This is automatically applied by the compiler
 // around the `main` function if it has an `:async` effect.
@@ -475,8 +469,6 @@ pub fun async/handle(action : () -> <async,io-noexn> () ) : io-noexn ()
       handle-cancel(scope)
     fun async-iox( f ) 
       f()
-    // fun async-ticks()
-    //   timer/ticks()
 
 fun io-noexn( f : () -> io-noexn a ) : io a
   f()
