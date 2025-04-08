@@ -276,7 +276,7 @@ pub fun error/is-cancel( t : error<a> ) : bool
     Error(exn) -> exn.is-cancel
     _ -> False
 
-fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,strands<a>|e> ()
+fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strands<a>|e> ()
   val strands =  xs.map-indexed fn(i,action)
       return fn()
         trace("Strand ")
@@ -286,7 +286,7 @@ fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,strands<a>|e> (
         if res.is-finalize then cancel()  // cancel others if finalization happens
   val ch : some<a,e> channel<() -> <async|e> a> = channel()
   fun handle-strand(action) 
-  with override     
+    with override     
       // redirect all other operations
       fun no-await(setup,scope,c,f)  
         no-await(setup,scope,c,f)    
