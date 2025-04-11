@@ -1,5 +1,8 @@
 import std/async
 import std/time/duration
+import std/time/instant
+import std/time/timestamp
+
 fun main()
   with async/handle
   try {

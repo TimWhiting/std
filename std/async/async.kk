@@ -263,7 +263,7 @@ inline extern unsafe-no-ndet-div-cast : forall<a,e> (() -> <ndet,div|e> a) -> ((
 fun unsafe-no-ndet-div( action : () -> <ndet,div|e> a ) : e a 
   unsafe-no-ndet-div-cast(action)()
 
-inline extern inject-effects : forall<a,h,e> (() -> e a) -> total (() -> <strands<a>,ndet,div|e> a)   
+inline extern inject-ndet-div : forall<a,h,e> (() -> e a) -> total (() -> <ndet,div|e> a)   
   inline "#1"
 
 fun error/is-finalize( t : error<a> ) : bool
@@ -281,7 +281,7 @@ fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strand
       return fn()
         trace("Strand ")
         debug-evv()
-        val res = unsafe-try-all(inject-effects(action))
+        val res = unsafe-try-all(inject-ndet-div({mask<strands>{action()}}))
         strand-done(i,res)
         if res.is-finalize then cancel()  // cancel others if finalization happens
   val ch : some<a,e> channel<() -> <async|e> a> = channel()
