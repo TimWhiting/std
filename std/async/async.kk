@@ -132,6 +132,8 @@ pub fun duration/wait( secs : duration = zero) : asyncx ()
   if secs <= zero then return yield()
   val msecs = max(zero:int32,secs.milli-seconds.int32)
   await fn(cb)
+    println("Set-timeout")
+    debug-evv()
     val tid = async/set-timeout( fn(){ cb(Ok(())) }, msecs )
     Just( { async/clear-timeout(tid) } )
 
@@ -293,6 +295,8 @@ fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strand
         cancel(scope)
       raw ctl do-await(setup,scope,c)
         no-await( setup, scope, c) fn(res)
+          println("Interleaved do-await setup")
+          debug-evv()
           // emit a resumption of this strand into the channel
           ch.emit-io( /* no-cps */ { rcontext.resume(res) }  )
         ()  // stop the strand at this point 
@@ -424,7 +428,11 @@ pub fun async/handle(action : () -> <async,io-noexn> () ) : io-noexn ()
       // We invoke the callback with real-timeouts, however
       // `custom-schedule` may override the inner `schedule` handle to inject
       // a different implementation
+      println("Before Handle Schedule")
+      debug-evv()
       with handle-schedule
+      println("After Handle Schedule")
+      debug-evv()
       match(setup(cb))
         Just(d) -> dispose := (fn() handle-schedule { d() })
         Nothing -> ()
