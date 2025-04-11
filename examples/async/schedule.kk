@@ -7,14 +7,14 @@ fun main()
   with async/handle
   try {
       interleaved { 
-          trace("Interleavedx")
+          trace("Main: wait")
           debug-evv()
           wait(1.seconds)
-          () 
+          trace("Here")
         } { 
-          ()
+          trace("There")
         }
       ()
     } fn(err) {
-      println("error")
+      trace("error")
     }

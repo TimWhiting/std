@@ -132,7 +132,6 @@ pub fun duration/wait( secs : duration = zero) : asyncx ()
   if secs <= zero then return yield()
   val msecs = max(zero:int32,secs.milli-seconds.int32)
   await fn(cb)
-    debug-evv()
     val tid = async/set-timeout( fn(){ cb(Ok(())) }, msecs )
     Just( { async/clear-timeout(tid) } )
 
@@ -279,8 +278,6 @@ pub fun error/is-cancel( t : error<a> ) : bool
 fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strands<a>|e> ()
   val strands =  xs.map-indexed fn(i,action)
       return fn()
-        trace("Strand ")
-        debug-evv()
         val res = unsafe-try-all(inject-ndet-div({mask<strands>{action()}}))
         strand-done(i,res)
         if res.is-finalize then cancel()  // cancel others if finalization happens
@@ -295,20 +292,14 @@ fun interleaved-div( xs : list<() -> <async-exn|e> a> ) : <async,ndet,div,strand
       fun cancel(scope)  
         cancel(scope)
       raw ctl do-await(setup,scope,c)
-        trace("strand-await")
-        debug-evv()
         no-await( setup, scope, c) fn(res)
-          trace("strand-resume")
           // emit a resumption of this strand into the channel
           ch.emit-io( /* no-cps */ { rcontext.resume(res) }  )
         ()  // stop the strand at this point 
     action()
-  trace("Interleaved")
   debug-evv()
   strands.foreach fn(strand)
     handle-strand{ 
-      trace("Before mask")
-      debug-evv()
       strand()
     }
 
@@ -366,8 +357,6 @@ pub fun noscope/cancel() : async ()
 // The callback should be invoked exactly once -- when that happens `await-exn` is resumed with the result.
 pub fun await-exn( setup : (cb : (error<a>) -> io-noexn ()) -> <schedule,io> (maybe<() -> <schedule,io-noexn> ()>) ) : async error<a>
   do-await(fn(cb)
-    trace("Setup callback")
-    debug-evv()
     match (try{ setup(fn(res) cb(res,True) ) })
       Ok(mcleanup) -> mcleanup
       Error(exn) ->
@@ -435,10 +424,7 @@ pub fun async/handle(action : () -> <async,io-noexn> () ) : io-noexn ()
       // We invoke the callback with real-timeouts, however
       // `custom-schedule` may override the inner `schedule` handle to inject
       // a different implementation
-      debug-evv()
       with handle-schedule
-      debug-evv()
-      println("Call setup")
       match(setup(cb))
         Just(d) -> dispose := (fn() handle-schedule { d() })
         Nothing -> ()
@@ -450,20 +436,12 @@ pub fun async/handle(action : () -> <async,io-noexn> () ) : io-noexn ()
     (!callbacks).foreach fn(entry)
       val (cscope,cb) = entry
       if (cscope.in-scope-of(scope)) then cb()
-  trace("init async ")
-  debug-evv()
   handle <async> (action)
     raw ctl do-await( setup, scope, c ) 
-      println("do-await")
-      debug-evv()
       handle-await(setup,scope, 
                    fn(x) {
-                     trace("resume")
-                     debug-evv()
                      rcontext.resume(x)}, c)   // returns to outer event loop
     fun no-await( setup, scope, c, f ) 
-      println("no-await")
-      debug-evv()
       handle-await(setup,scope,f,c)
     fun cancel( scope ) 
       handle-cancel(scope)
