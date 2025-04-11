@@ -449,10 +449,10 @@ pub fun async/handle(action : () -> <async,io-noexn> () ) : io-noexn ()
       handle-await(setup,scope, 
                    fn(x) {
                      rcontext.resume(x)}, c)   // returns to outer event loop
-    fun no-await( setup, scope, c, f ) 
+    ctl no-await( setup, scope, c, f ) 
       println("No Await")
       debug-evv()
-      handle-await(setup,scope,f,c)
+      resume(handle-await(setup,scope,f,c))
     fun cancel( scope ) 
       handle-cancel(scope)
     fun async-iox( f ) 
